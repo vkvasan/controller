@@ -1,0 +1,320 @@
+module wbram_controller_rd_rightpe#(
+    parameter STREAM_WIDTH = 128,
+     WBRAM_WIDTH = STREAM_WIDTH //WRITE WIDTH OF BRAM, 
+     NUM_BANKS = 16,
+     WBRAM_DEPTH = (WEIGHT_BIT * (MAX_OUT_CHANNEL/NUM_BANKS) * MAX_IN_CHANNEL * MAX_KERNEL_SIZE )/WBRAM_WIDTH, //WRITE DEPTH OF BRAM
+    MAX_OUT_CHANNEL = 128, 
+    MAX_IN_CHANNEL = 45,
+    MAX_KERNEL_SIZE = 5, 
+    MAX_OUT_SEQ = 160, 
+    MAX_NUM_LAYERS = 4,
+    PARAM_WIDTH = $clog2(MAX_OUT_CHANNEL) + $clog2(MAX_IN_CHANNEL) + $clog2(MAX_KERNEL_SIZE) + $clog2(MAX_OUT_CHANNEL*MAX_KERNEL_SIZE), 
+    WEIGHT_BIT = 8 
+    )(
+    input logic clk,
+    input logic rst_n, 
+
+    // to/from weight axi_bram
+    output logic [$clog2(WBRAM_DEPTH)-1:0]addrB, 
+    input  logic [STREAM_WIDTH-1:0]diB, 
+    //input logic diB_valid,
+    output logic enaB, 
+    output logic weB, 
+    input logic start, 
+
+    //from wbram_controller_rd ( pe0--------pe 1 )
+    input logic [1:0]wr_pointer_data_l,  ////POINTER
+    input logic wr_pointer_valid_l, 
+    output logic wr_pointer_ready_l, 
+
+    //from wbram_controller_rd( pe0--------pe 1 )  //PARAMS 
+    input logic [PARAM_WIDTH-1:0]param_data_l, 
+    input logic param_data_valid_l,
+    output logic  param_data_ready_l, 
+
+    //to wbram_controller_wr ( pe 1 ---------> wr_controller ) //POINTER
+    output logic [1:0]rd_pointer_data_r,  
+    output logic rd_pointer_valid_r, 
+    input logic rd_pointer_ready_r, 
+
+    
+    //to systolic array
+    output logic[WEIGHT_BIT-1:0]w_sys_data;
+    output logic w_sys_valid, 
+    input logic w_sys_ready
+);
+
+typedef enum logic [2:0] {IDLE, PARAM_READ, BRAM_READ} STATE;
+STATE curr_state,next_state;
+
+logic [$clog2(WBRAM_DEPTH)-1:0]addrB_reg;
+logic enaB_reg;
+logic param_data_set;
+logic num_layers_set;
+logic [$clog2(MAX_OUT_CHANNEL/NUM_BANKS * MAX_IN_CHANNEL * MAX_KERNEL_SIZE)]bram_counter;
+logic [$clog2(MAX_OUT_CHANNEL/NUM_BANKS)]out_channel_count;
+
+logic full; 
+logic empty;
+logic [1:0]rd_pointer_local;
+logic [1:0]wr_pointer_local;
+logic [PARAM_WIDTH-1:0]param_data_local;
+logic[$clogs(MAX_NUM_LAYERS)-1:0]num_layers;
+logic [$clogs(MAX_NUM_LAYERS)-1:0]layer_count;
+logic [$clog2(MAX_IN_CHANNEL)-1:0]num_in_channel;
+logic [$clog2(MAX_OUT_CHANNEL)-1:0]num_out_channels;
+logic [$clog2(MAX_KERNEL_SIZE)-1:0]kernel_size;
+logic [$clog2(MAX_IN_CHANNEL*MAX_KERNEL_SIZE)-1:0]accum_total;
+
+
+/***outputs as function of current state, input state and local registers***/
+//WBRAM interface
+/*
+    output logic [$clog2(WBRAM_DEPTH)-1:0]addrB,  //make it comb
+    input  logic [STREAM_WIDTH-1:0]diB, 
+    input logic diB_valid,
+    output logic [NUM_BANKS-1:0]enaB, 
+    output logic [NUM_BANKS-1:0]weB, 
+    ////output all of this at the same clock edge when data is received from AXI Stream and the module is in BRAM_WRITE PHASE
+*/
+always_comb begin
+    weB = 0;
+    if( curr_state  == PARAM_READ )begin
+        if(next_state == BRAM_READ & w_sys_ready == 1)begin
+            addrB = 0;
+            enaB = 1;
+        end
+    end
+    else if( curr_state == BRAM_READ )begin
+            if( next_state == BRAM_READ & w_sys_ready == 1 )begin
+                addrB = addrB_reg + 1;
+                enaB = 1;
+            end
+            else begin
+                addrB = addrB_reg;
+                enaB = 0;
+            end
+    end
+    else begin
+        addrB = addrB_reg;
+        enaB = 0;
+    end
+end
+
+always_ff begin
+    enaB_reg <= enaB;
+    if( curr_state == BRAM_READ)
+        addrB_reg <= addrB;
+    else    
+        addrB_reg <= 0;
+end
+
+/***
+//from wbram_controller_rd ( pe0--------pe 1 )
+    input logic [1:0]wr_pointer_data_l,  //POINTER
+    input logic wr_pointer_valid_l, 
+    output logic wr_pointer_ready_l, 
+
+        //from wbram_controller_rd( pe0--------pe 1 )  //PARAMS 
+    input logic [PARAM_WIDTH-1:0]param_data_l, 
+    input logic param_data_valid_l,
+    output logic  param_data_ready_l, 
+
+*/
+
+always_ff begin
+    if(!rst_n)
+        wr_pointer_ready_l <= 1;
+        param_data_ready_l <= 1;
+    else begin
+        wr_pointer_ready_l <= 1;
+        param_data_ready_l <= 1; //always 1. for mid PE 
+    end
+end
+
+/***
+    
+    //to wbram_controller_wr ( pe 1 ---------> wr_controller ) //POINTER
+    output logic [1:0]rd_pointer_data_r,  //comb. 
+    output logic rd_pointer_valid_r, 
+    input logic rd_pointer_ready_r, 
+****/
+always_ff begin
+if( !rst_n )begin
+    rd_pointer_valid_r <= 0;
+end
+begin
+    if( rd_pointer_ready_r == 1 & num_layers_set == 1 )begin
+         rd_pointer_valid_r <= 1;
+    end
+    else begin
+        rd_pointer_valid_r <= 0;
+    end
+end
+end
+
+always_comb begin
+    rd_pointer_data_r = rd_pointer_local;
+end
+
+always_ff begin
+if(!rst_n)begin
+    rd_pointer_local <= 0;
+end
+else begin
+
+    if( curr_state == IDLE )begin
+        rd_pointer_local <= 0;
+    end
+    if( curr_state ==  BRAM_WRITE & next_state == PARAM_READ)begin
+        rd_pointer_local <= rd_pointer_local + 1;
+    end
+end
+end
+
+/****
+//to systolic array
+    output logic[WEIGHT_BIT-1:0]w_sys_data;
+    output logic w_sys_valid, 
+    input logic w_sys_ready
+*///
+
+always_ff begin
+    if(!rst_n)
+        w_sys_data <= 0;
+        w_sys_valid <= 0;
+    else begin
+        if( curr_state == BRAM_READ & enaB_reg )begin
+            w_sys_data <= diB;
+            w_sys_valid <= 1;
+        end
+        else 
+            w_sys_valid <= 0;
+    end
+end
+
+//Next state
+always_comb
+case(curr_state)
+IDLE:begin
+    if( start )begin
+        next_state = PARAM_READ; 
+    end
+    else 
+        next_state = IDLE;
+end
+PARAM_READ: begin
+            if( param_data_valid_l & param_data_ready_l )begin
+                if(num_layers_set )
+                    next_state = BRAM_READ;
+                else begin
+                    next_state = PARAM_READ;
+                end
+            end 
+            else begin
+                next_state = PARAM_READ;
+            end
+end
+BRAM_READ:begin
+                if( layer_count == num_layers -1 & out_channel_count == num_out_channel-1 & (addrB - bram_counter)== accum_total-1  )
+                    next_state = IDLE;
+                else if( out_channel_count == (num_out_channel>>NUM_BANKS)-1 & (addrB - bram_counter)== accum_total-1)
+                    next_state = PARAM_READ;    
+                else 
+                    next_state = BRAM_WRITE;
+                
+end
+endcase
+
+
+
+//address generation ff 
+always_ff begin
+if( !rst_n )begin
+    out_channel_count <= 0;
+    bram_counter <= 0;
+end
+else begin
+    if( curr_state != BRAM_WRITE ) begin
+        out_channel_count <= 0;
+        bram_counter <= 0;
+    end
+    else begin
+        if( addrB - bram_counter == accum_total-1 )begin
+            out_channel_count <= out_channel_count + 1;
+            bram_counter <= bram_counter + accum_total;
+        end
+    end
+end
+end 
+
+
+// layer_count, rd_pointer_local
+always_ff begin
+    if(!rst_n)begin
+        layer_count <= 0;
+    end
+    else begin
+        if( state == IDLE )begin
+            layer_count <= 0;
+        end
+        if( curr_state ==  BRAM_READ & next_state == PARAM_READ)begin
+            layer_count <= layer_count + 1;
+        end
+    end
+end
+
+
+//wr_pointer_local
+always_ff begin
+if( !rst_n )
+    wr_pointer_local <= 0;
+else begin
+    if( wr_pointer_valid_l & wr_pointer_ready_l)
+        wr_pointer_local <=  wr_pointer_data_l;
+end
+end
+
+
+//param_data_set and num_layer_set
+always_ff begin
+    if( curr_state == PARAM_READ )begin
+        if(num_layers_set == 0)begin
+            if(param_data_valid_l & param_data_ready_l)begin
+                num_layers_set <= 1;
+                num_layers <= param_data;
+            end
+        end
+        else begin
+            if(param_data_valid_l & param_data_ready_l)begin
+                param_data_set <= 1;
+                param_data_local <= param_data;
+            end
+        end
+    end
+    else if( curr_state == BRAM_READ )begin
+        if (next_state == PARAM_READ)begin
+            param_data_set <= 0;
+        end
+        else 
+            param_data_set <= 1;
+    end
+    else begin
+        param_data_set <= 0; 
+        num_layers_set <= 0;
+    end
+    
+end
+
+always_comb begin
+    empty = (wr_pointer_local == rd_pointer_local) ? 1 : 0;
+    full = (wr_pointer_local[0] == rd_pointer_local[0]) & (wr_pointer_local[1] != rd_pointer_local[1]) ? 1 : 0;
+    num_in_channel = param_data_set ? param_data_local[$clog2(MAX_IN_CHANNEL) -1:0] : 0;
+    num_out_channel = param_data_set ? param_data_local[$clog2(MAX_IN_CHANNEL)+$clog2(MAX_OUT_CHANNEL) -1:$clog2(MAX_IN_CHANNEL)] : 0;
+    kernel_size = param_data_set ? param_data_local[ $clog2(MAX_IN_CHANNEL)+$clog2(MAX_OUT_CHANNEL) + $clog2(MAX_KERNEL_SIZE) -1:$clog2(MAX_IN_CHANNEL)+$clog2(MAX_OUT_CHANNEL)  ] : 0;
+    accum_total = param_data_set ? param_data_local[$clog2(MAX_OUT_CHANNEL*MAX_KERNEL_SIZE) + $clog2(MAX_IN_CHANNEL)+$clog2(MAX_OUT_CHANNEL)+ $clog2(MAX_KERNEL_SIZE) -1:$clog2(MAX_IN_CHANNEL)+$clog2(MAX_OUT_CHANNEL) + $clog2(MAX_KERNEL_SIZE)  ] : 0;
+end
+
+
+
+endmodule

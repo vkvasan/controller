@@ -1,0 +1,196 @@
+/*
+
+AMD Vivado v2024.1.1 (64-bit) [Major: 2024, Minor: 1]
+SW Build: 5094488 on Fri Jun 14 08:57:50 MDT 2024
+IP Build: 5091682 on Fri Jun 14 16:55:04 MDT 2024
+IP Build: 5091682 on Fri Jun 14 16:55:04 MDT 2024
+
+Process ID (PID): 167010
+License: Customer
+Mode: GUI Mode
+
+Current time: 	Mon Dec 02 15:23:13 PST 2024
+Time zone: 	Pacific Standard Time (America/Los_Angeles)
+
+OS: Ubuntu
+OS Version: 5.15.0-125-generic
+OS Architecture: amd64
+Available processors (cores): 32
+LSB Release Description: DISTRIB_ID=Ubuntu
+
+Display: 1
+Screen size: 1920x1080
+Local screen bounds: x = 66, y = 119, width = 1854, height = 1053
+Screen resolution (DPI): 100
+Available screens: 2
+Default font: family=Dialog,name=Dialog,style=plain,size=12
+Scale size: 12
+OS font scaling: 100%
+Anti-Alias Enabled: false
+
+Java version: 	21.0.1 64-bit
+JavaFX version: 21.0.1
+Java home: 	/tools/Xilinx/Vivado/2024.1/tps/lnx64/jre21.0.1_12
+Java executable: 	/tools/Xilinx/Vivado/2024.1/tps/lnx64/jre21.0.1_12/bin/java
+Java arguments: 	[-Dsun.java2d.pmoffscreen=false, -Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2, -Dsun.java2d.xrender=false, -Dsun.java2d.uiScale.enabled=false, -Dswing.aatext=true, -XX:-UsePerfData, -Djdk.map.althashing.threshold=512, -XX:StringTableSize=4072, -XX:+UseStringDeduplication, -XX:MaxGCPauseMillis=200, -XX:+ParallelRefProcEnabled, --add-opens=java.desktop/javax.swing.plaf.synth=ALL-UNNAMED, --add-opens=java.base/java.nio=ALL-UNNAMED, --add-opens=java.desktop/sun.swing=ALL-UNNAMED, --add-opens=java.desktop/javax.swing=ALL-UNNAMED, --add-opens=java.desktop/javax.swing.tree=ALL-UNNAMED, --add-opens=java.desktop/javax.swing.plaf.basic=ALL-UNNAMED, --add-opens=java.desktop/javax.swing.plaf.synth=ALL-UNNAMED, --add-opens=java.desktop/javax.swing.plaf.basic=ALL-UNNAMED, --add-opens=java.desktop/javax.swing=ALL-UNNAMED, --add-opens=java.desktop/javax.swing.tree=ALL-UNNAMED, --add-opens=java.desktop/java.awt.event=ALL-UNNAMED, --add-exports=java.desktop/javax.swing.plaf.synth=ALL-UNNAMED, --add-exports=java.base/java.nio=ALL-UNNAMED, --add-exports=java.desktop/sun.swing=ALL-UNNAMED, --add-exports=java.desktop/javax.swing=ALL-UNNAMED, --add-exports=java.desktop/javax.swing.tree=ALL-UNNAMED, --add-exports=java.desktop/javax.swing.plaf.basic=ALL-UNNAMED, --add-exports=java.desktop/sun.swing=ALL-UNNAMED, --add-exports=java.desktop/sun.swing.table=ALL-UNNAMED, --add-exports=java.desktop/sun.swing.plaf.synth=ALL-UNNAMED, --add-exports=java.desktop/sun.awt.shell=ALL-UNNAMED, --add-exports=java.base/sun.security.action=ALL-UNNAMED, --add-exports=java.desktop/sun.font=ALL-UNNAMED, --add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED, -XX:NewSize=80m, -XX:MaxNewSize=80m, -Xms512m, -Xmx4072m, -Xss10m, -Xrs]
+Java initial memory (-Xms): 	512 MB
+Java maximum memory (-Xmx):	 3 GB
+
+User name: 	keerthiv
+User home directory: /home/keerthiv
+User working directory: /home/keerthiv/project_4/project_4.srcs/sources_1/imports/1_D_CONV_axi/wbram+controller
+User country: 	US
+User language: 	en
+User locale: 	en_US
+
+RDI_BASEROOT: /tools/Xilinx/Vivado
+HDI_APPROOT: /tools/Xilinx/Vivado/2024.1
+RDI_DATADIR: /tools/Xilinx/Vivado/2024.1/data
+RDI_BINDIR: /tools/Xilinx/Vivado/2024.1/bin
+
+Vivado preferences file: /home/keerthiv/.Xilinx/Vivado/2024.1/vivado.xml
+Vivado preferences directory: /home/keerthiv/.Xilinx/Vivado/2024.1/
+Vivado layouts directory: /home/keerthiv/.Xilinx/Vivado/2024.1/data/layouts
+PlanAhead jar file: 	/tools/Xilinx/Vivado/2024.1/lib/classes/planAhead.jar
+Vivado log file: 	/home/keerthiv/project_4/project_4.srcs/sources_1/imports/1_D_CONV_axi/wbram+controller/vivado.log
+Vivado journal file: 	/home/keerthiv/project_4/project_4.srcs/sources_1/imports/1_D_CONV_axi/wbram+controller/vivado.jou
+Engine tmp dir: 	./.Xil/Vivado-167010-keerthiv-MS-7E07
+Non-Default Parameters:	[]
+
+Xilinx & AMD Environment Variables
+--------------------------------------------------------------------------------------------
+GNOME_SHELL_SESSION_MODE: ubuntu
+RDI_APPROOT: /tools/Xilinx/Vivado/2024.1
+RDI_BASEROOT: /tools/Xilinx/Vivado
+RDI_BINROOT: /tools/Xilinx/Vivado/2024.1/bin
+RDI_BUILD: yes
+RDI_DATADIR: /tools/Xilinx/Vivado/2024.1/data
+RDI_INSTALLROOT: /tools/Xilinx
+RDI_INSTALLVER: 2024.1
+RDI_JAVA_PLATFORM: 
+RDI_JAVA_VERSION: 21.0.1_12
+RDI_LIBDIR: /tools/Xilinx/Vivado/2024.1/lib/lnx64.o/Ubuntu/20:/tools/Xilinx/Vivado/2024.1/lib/lnx64.o/Ubuntu:/tools/Xilinx/Vivado/2024.1/lib/lnx64.o
+RDI_OPT_EXT: .o
+RDI_PATCHROOT: 
+RDI_PLATFORM: lnx64
+RDI_PREPEND_PATH: /tools/Xilinx/Vivado/2024.1/ids_lite/ISE/bin/lin64
+RDI_PROG: /tools/Xilinx/Vivado/2024.1/bin/unwrapped/lnx64.o/vivado
+RDI_SESSION_INFO: /home/keerthiv/project_4/project_4.srcs/sources_1/imports/1_D_CONV_axi/wbram+controller:keerthiv-MS-7E07_1733181785_166969
+RDI_SHARED_DATA: /tools/Xilinx/SharedData/2024.1/data
+RDI_TPS_ROOT: /tools/Xilinx/Vivado/2024.1/tps/lnx64
+RDI_USE_JDK21: True
+SHELL: /bin/bash
+XILINX: /tools/Xilinx/Vivado/2024.1/ids_lite/ISE
+XILINX_DSP: /tools/Xilinx/Vivado/2024.1/ids_lite/ISE
+XILINX_HLS: /tools/Xilinx/Vitis_HLS/2024.1
+XILINX_PLANAHEAD: /tools/Xilinx/Vivado/2024.1
+XILINX_VIVADO: /tools/Xilinx/Vivado/2024.1
+XILINX_VIVADO_HLS: /tools/Xilinx/Vivado/2024.1
+
+
+GUI allocated memory:	512 MB
+GUI max memory:		4,072 MB
+Engine allocated memory: 1,650 MB
+
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+*/
+
+// TclEventType: START_GUI
+// Tcl Message: start_gui 
+selectList(PAResourceQtoS.SyntheticaGettingStartedView_RECENT_PROJECTS, "/home/keerthiv/instruction_buffer/instruction_buffer.xpr", 0); // b.c (PAResourceQtoS.SyntheticaGettingStartedView_RECENT_PROJECTS)
+// Opening Vivado Project: /home/keerthiv/instruction_buffer/instruction_buffer.xpr. Version: Vivado v2024.1.1 
+// TclEventType: DEBUG_PROBE_SET_CHANGE
+// TclEventType: FLOW_ADDED
+// Tcl Message: open_project /home/keerthiv/instruction_buffer/instruction_buffer.xpr 
+selectButton(RDIResource.ProgressDialog_CANCEL, "Cancel", "Open Project"); // a (RDIResource.ProgressDialog_CANCEL)
+// Tcl Message: INFO: [Common 17-41] Interrupt caught. Command should exit soon. 
+// TclEventType: MSGMGR_MOVEMSG
+// TclEventType: PROJECT_CLOSE
+// CommandFailedException: ERROR: [Common 17-69] Command failed:  
+dismissDialog("Open Project"); // bj (Open Project Progress)
+// HMemoryUtils.trashcanNow. Engine heap size: 1,738 MB. GUI used memory: 66 MB. Current time: 12/2/24, 3:23:14 PM PST
+selectList(PAResourceQtoS.SyntheticaGettingStartedView_RECENT_PROJECTS, "/home/keerthiv/project_5/project_5.xpr", 1); // b.c (PAResourceQtoS.SyntheticaGettingStartedView_RECENT_PROJECTS)
+// Opening Vivado Project: /home/keerthiv/project_5/project_5.xpr. Version: Vivado v2024.1.1 
+// TclEventType: MSGMGR_MOVEMSG
+// TclEventType: FILE_SET_CHANGE
+// TclEventType: FILESET_TARGET_UCF_CHANGE
+// TclEventType: FILE_SET_CHANGE
+// TclEventType: FILE_SET_NEW
+// TclEventType: RUN_COMPLETED
+// TclEventType: RUN_STATUS_CHANGE
+// TclEventType: FILESET_TARGET_UCF_CHANGE
+// TclEventType: RUN_COMPLETED
+// TclEventType: RUN_STATUS_CHANGE
+// TclEventType: FILESET_TARGET_UCF_CHANGE
+// TclEventType: RUN_CURRENT
+// TclEventType: PROJECT_DASHBOARD_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_DASHBOARD_GADGET_NEW
+// TclEventType: PROJECT_DASHBOARD_GADGET_CHANGE
+// TclEventType: PROJECT_NEW
+// Tcl Message: open_project /home/keerthiv/project_5/project_5.xpr 
+// TclEventType: PROJECT_NEW
+// [GUI Memory]: 79 MB (+79874kb) [00:00:08]
+// [Engine Memory]: 1,772 MB (+1706109kb) [00:00:08]
+// [GUI Memory]: 125 MB (+44148kb) [00:00:09]
+// [Engine Memory]: 1,903 MB (+44580kb) [00:00:09]
+// Tcl Message: Scanning sources... Finished scanning sources 
+// Tcl Message: INFO: [IP_Flow 19-234] Refreshing IP repositories INFO: [IP_Flow 19-1704] No user IP repositories specified INFO: [IP_Flow 19-2313] Loaded Vivado IP repository '/tools/Xilinx/Vivado/2024.1/data/ip'. 
+// [GUI Memory]: 136 MB (+5355kb) [00:00:09]
+// Project name: project_5; location: /home/keerthiv/project_5; part: xczu7ev-ffvc1156-2-e
+dismissDialog("Open Project"); // bj (Open Project Progress)
+// [GUI Memory]: 149 MB (+6952kb) [00:00:11]
+// Tcl Message: update_compile_order -fileset sources_1 
+selectTree(PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, "[root, Design Sources, bram_custom_test_old (bram_custom_test.sv)]", 3, false); // E (PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE)
+selectTree(PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, "[root, Design Sources, bram_custom_test_old (bram_custom_test.sv)]", 3, false, false, false, false, false, true); // E (PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE) - Double Click
+expandTree(PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, "[root, Simulation Sources]", 5); // E (PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE)
+selectTree(PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, "[root, Simulation Sources, sim_1]", 6, true); // E (PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE) - Node
+expandTree(PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, "[root, Simulation Sources, sim_1]", 6); // E (PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE)
+selectTree(PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, "[root, Simulation Sources, sim_1, tb_asym_ram_tdp_write_first (bram_custom_test_tb1.sv)]", 7, true); // E (PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE) - Node
+selectTree(PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, "[root, Simulation Sources, sim_1, tb_asym_ram_tdp_write_first (bram_custom_test_tb1.sv)]", 7, true, false, false, false, false, true); // E (PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE) - Double Click - Node
+// HMemoryUtils.trashcanNow. Engine heap size: 2,028 MB. GUI used memory: 80 MB. Current time: 12/2/24, 3:23:34 PM PST
+selectCodeEditor("bram_custom_test_tb1.sv", 276, 354); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 276, 354, false, false, false, false, true); // ac (bram_custom_test_tb1.sv) - Double Click
+selectCodeEditor("bram_custom_test_tb1.sv", 276, 354); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 286, 361); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 286, 361, false, false, false, false, true); // ac (bram_custom_test_tb1.sv) - Double Click
+selectCodeEditor("bram_custom_test_tb1.sv", 286, 361); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 204, 220); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 204, 220, false, false, false, false, true); // ac (bram_custom_test_tb1.sv) - Double Click
+selectCodeEditor("bram_custom_test_tb1.sv", 204, 220); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 193, 301); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 193, 301, false, false, false, false, true); // ac (bram_custom_test_tb1.sv) - Double Click
+selectCodeEditor("bram_custom_test_tb1.sv", 193, 301); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 190, 356); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 190, 356, false, false, false, false, true); // ac (bram_custom_test_tb1.sv) - Double Click
+selectCodeEditor("bram_custom_test_tb1.sv", 190, 356); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 189, 368); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 189, 368, false, false, false, false, true); // ac (bram_custom_test_tb1.sv) - Double Click
+selectCodeEditor("bram_custom_test_tb1.sv", 189, 368); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 180, 391); // ac (bram_custom_test_tb1.sv)
+selectCodeEditor("bram_custom_test_tb1.sv", 180, 391, false, false, false, false, true); // ac (bram_custom_test_tb1.sv) - Double Click
+selectCodeEditor("bram_custom_test_tb1.sv", 180, 391); // ac (bram_custom_test_tb1.sv)
+// [Engine Memory]: 2,028 MB (+31419kb) [00:00:52]
+// HMemoryUtils.trashcanNow. Engine heap size: 2,041 MB. GUI used memory: 80 MB. Current time: 12/2/24, 3:53:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,041 MB. GUI used memory: 80 MB. Current time: 12/2/24, 4:23:34 PM PST
+// [GUI Memory]: 158 MB (+1595kb) [01:03:15]
+// HMemoryUtils.trashcanNow. Engine heap size: 2,042 MB. GUI used memory: 60 MB. Current time: 12/2/24, 4:53:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,042 MB. GUI used memory: 60 MB. Current time: 12/2/24, 5:23:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,042 MB. GUI used memory: 60 MB. Current time: 12/2/24, 5:53:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,042 MB. GUI used memory: 60 MB. Current time: 12/2/24, 6:23:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,042 MB. GUI used memory: 60 MB. Current time: 12/2/24, 6:53:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,042 MB. GUI used memory: 60 MB. Current time: 12/2/24, 7:23:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,042 MB. GUI used memory: 60 MB. Current time: 12/2/24, 7:53:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,049 MB. GUI used memory: 60 MB. Current time: 12/2/24, 8:23:34 PM PST
+// HMemoryUtils.trashcanNow. Engine heap size: 2,049 MB. GUI used memory: 60 MB. Current time: 12/2/24, 8:53:34 PM PST
