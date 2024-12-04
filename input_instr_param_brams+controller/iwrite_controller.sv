@@ -42,10 +42,28 @@ module iwrite_controller_init#(
     input logic param_addr_valid,
     output logic  param_addr_ready,
 
-    //to IBRAM_controller_rd
-    output logic [PARAM_WIDTH-1:0]param_data_rd,  //considering memory double buffering
+    //to IBRAM_controller_rd ( Data channel )
+    output logic [PARAM_WIDTH-1:0]param_data_rd,  
     output logic param_data_valid_rd, 
-    input logic param_data_valid_ready 
+    input logic param_data_valid_ready, 
+
+    //to IBRAM_controller_rd ( Address channel )
+    input logic [PARAM_WIDTH-1:0]param_data_rd,  
+    input logic param_data_valid_rd, 
+    output logic param_data_valid_ready, 
+
+    
+    //to iwritecontroller2 ( Data channel )
+    output logic [PARAM_WIDTH-1:0]param_data_rd,  
+    output logic param_data_valid_rd, 
+    input logic param_data_valid_ready, 
+
+    //to iwritecontroller2 ( Address channel )
+    input logic [PARAM_WIDTH-1:0]param_data_rd,  
+    input logic param_data_valid_rd, 
+    output logic param_data_valid_ready 
+ 
+
 
 );
 

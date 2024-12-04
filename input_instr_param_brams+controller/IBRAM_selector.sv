@@ -26,8 +26,8 @@ module IBRAM_selector#(
 
     //to ibram_controller_rd ( write address info.)
     output logic [NUM_BANKS-1:0][$clog2(WRITE_DEPTH):0]write_addr_pingpong_data, 
-    output logic [NUM_BANKS-1:0]write_addr_pingpong_valid, 
-    input logic [NUM_BANKS-1:0]write_addr_pingpong_ready, 
+    //output logic [NUM_BANKS-1:0]write_addr_pingpong_valid, 
+    //input logic [NUM_BANKS-1:0]write_addr_pingpong_ready, 
 
     //to ibram_controller_rd ( data stream )
     output logic [NUM_BANKS-1:0][READ_WIDTH-1:0]doB, 
@@ -37,11 +37,8 @@ module IBRAM_selector#(
 );
 
 
-logic [NUM_BANKS-1:0][$clog2(WRITE_DEPTH)-1:0]wr_addr_counter;  //write address to each Bank(BRAM). 
-//logic [NUM_BANKS-1:0]ping_pong; //choose the BRAM to be written/read ( will be used by read and write phases )
-logic [NUM_BANKS-1:0][1:0]wr_pointer; // ping pong can be inferred from here 
-logic [NUM_BANKS-1:0][1:0]rd_pointer; // ping pong can be inferred from here 
-
+logic [NUM_BANKS-1:0][$clog2(WRITE_DEPTH)-1:0]wr_addr_counter;  //write address to each Bank(BRAM).  //it's comb
+logic [NUM_BANKS-1:0]ping_pong;
 typedef enum  logic[1:0] {IDLE, INIT_WRITE, WRITE  } STATE;
 STATE curr_state,next_state;
 
@@ -51,10 +48,10 @@ generate
     for(  i =0; i < NUM_BANKS;i++)begin
         bram_xilinx ibx(.clkA(clk), 
                         .clkB(clk), 
-                        .enaA(!ping_pong[i] & ((curr_state == WRITE) ? enaA_1[i]:enaA_2[i]) ), 
-                        .weA(1), 
-                        .enaB(!addrB_ping_pong[i][READ_DEPTH]), 
-                        .weB(0), 
+                        .enaA(!ping_pong[i] & ((curr_state == WRITE) ? enaA_2[i]:(enaA_1 & bank_idx_1[i]) ) ), 
+                        .weA(!ping_pong[i] & ((curr_state == WRITE) ? weA_2[i]:(weA_1 & bank_idx_1[i]))), 
+                        .enaB(enaB & !addrB_ping_pong[i][READ_DEPTH]), 
+                        .weB(weB & !addrB_ping_pong[i][READ_DEPTH] ), 
                         .addrA(wr_addr_counter[i]), 
                         .addrB(addrB_ping_pong[i][$clog2(READ_DEPTH) -1 :0]), 
                         .diA((curr_state == WRITE) ? diA_2[i]: diA_1), 
@@ -63,10 +60,10 @@ generate
                         .doB(doB_ping[i]));
         bram_xilinx ibx(.clkA(clk), 
                         .clkB(clk), 
-                        .enaA(ping_pong[i] & ((curr_state == WRITE) ? enaA_1[i]:enaA_2[i])), 
-                        .weA(1), 
-                        .enaB(addrB_ping_pong[i][READ_DEPTH]), 
-                        .weB(0), 
+                        .enaA( ping_pong[i] & ((curr_state == WRITE) ? enaA_2[i]:(enaA_1 & bank_idx_1[i]) )), 
+                        .weA(ping_pong[i] & ((curr_state == WRITE) ? weA_2[i]:(weA_1 & bank_idx_1[i]) )), 
+                        .enaB(enaB & addrB_ping_pong[i][READ_DEPTH]), 
+                        .weB(weB & addrB_ping_pong[i][READ_DEPTH]), 
                         .addrA(wr_addr_counter[i]), 
                         .addrB(addrB_ping_pong[i][$clog2(READ_DEPTH) -1 :0]), 
                         .diA((curr_state == WRITE) ? diA_2[i]: diA_1[i] ), 
@@ -78,19 +75,18 @@ generate
     end
 endgenerate
 
-always_comb begin
-    write_addr_pingpong_data = {wr_addr_counter, ping_pong_wr};
+always_ff begin
+    write_addr_pingpong_data = {wr_addr_counter, ping_pong};
 end
+
 //update write address counter, 
 always_ff @(posedge clk or negedgr rst_n)begin
     if( next_state == INIT_WRITE)begin
         wr_addr_counter[i] <= 0;
-        //enaA_1 <= 1;
-        //weA_1 <= 1;
     end
     if  ( curr_state == INIT_WRITE)begin
         for( int i=0; i< NUM_BANKS;i++)begin
-            if( wr_done1)
+            if( next_state == IDLE)
                 wr_addr_counter[i] <= 0;
             else if(bank_idx_1[i] & enaA_1 & weA_1 &!ping_pong[i])
                 wr_addr_counter[i] <= wr_addr_counter[i] + 1;
@@ -100,15 +96,53 @@ always_ff @(posedge clk or negedgr rst_n)begin
         for( int i=0; i< NUM_BANKS;i++)begin
             if(bank_idx_2[i] & enaA_2 & weA_2 & ping_pong[i])
                 wr_addr_counter[i] <= wr_addr_counter[i] + 1;
-            if( wr_done1 || wr_done2)
+            if( wr_done2[i])
                 wr_addr_counter[i] <= 0;
         end
     end
 end
 
+always_ff @(posedge clk or negedge rst_n)begin
+if(!rst_n)begin
+    ping_pong <= 0;
+end
+else begin
+    if( curr_state == INIT_WRITE)
+        if(wr_done1)begin
+            for( int i = 0; i < NUM_BANKS;i++)begin
+                ping_pong[i]  <=  !ping_pong[i];
+            end
+        end
+    else if (curr_state == WRITE)begin
+        for( int i = 0; i < NUM_BANKS;i++)begin
+            if( wr_done2[NUM_BANKS-1] )
+                ping_pong[i]  <=  !ping_pong[i];
+        end
+
+    end
+end
+
+end
+
+always_comb begin
+case(curr_state)
+IDLE: begin
+        if( enaA_1 & weA_1 )
+            next_state = INIT_WRITE;
+        if( enaA_2[i] & weA_2[i] )
+            next_state = WRITE;
+      end
+INIT_WRITE : if( wr_done1 ) 
+                next_state =  IDLE;
+WRITE: if( wr_done2[NUM_BANKS-1] ) 
+            next_state =  IDLE;
+
+    
 
 
+endcase
 
+end
 
 
 
