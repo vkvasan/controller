@@ -53,6 +53,8 @@ typedef enum logic[1:0]{ IDLE,NUM_LAYER_READ, PARAM_READ,BRAM_READ}STATE;
 STATE curr_state, next_state; 
 logic rd_done;
 logic ping_pong_rd;
+logic act_first_oc_next;
+
 
 //outputs -> ird_ready
 always_ff @(posedge clk or negedge rst_n) begin
@@ -231,7 +233,7 @@ if( !rst_n )begin
 end
 else begin
     if( curr_state == BRAM_READ )begin
-        rd_done <=  ((out_chan_count == (out_chan_size >> NUM_COLS)-1) & (accum_count == accum_total - 2)) ? 1 :0 ;  
+        rd_done <=  ((out_chan_count == ((out_chan_size + NUM_COLS-1)>> $clog2(NUM_COLS))-1) & ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1)& (accum_count == accum_total - 2)) ? 1 :0 ;  
         layer_count <=  ((out_chan_count == (out_chan_size >> NUM_COLS)-1) & (accum_count == accum_total - 1)) ? (layer_count + 1) :layer_count;
     end
     else if( curr_state == IDLE) begin
@@ -244,7 +246,208 @@ end
 end
 
 
+//obtaining the parameters
+always_ff@(posedge clk or negedge rst_n)begin
+if(!rst_n)begin
+    out_chan_size <= 0;
+    accum_total <= 0; 
+    act_first_oc_next <= 0;
+    num_layer <= 0;
+    kernel_size <= 0;
+    in_chan_size <= 0;
+    in_seq_length <= 0;
+end
+else begin
+    if( param_data_valid_rd & param_data_ready_rd )
+        {act_first_oc_next, out_chan_size,accum_total, num_layer, kernel_size, in_chan_size,in_seq_length} <= param_data_rd;
+end
+end
+
+// ping_pong_rd, accum_count, outchan_count, 
+always_ff@(posedge clk or negedge rst_n)begin
+if(!rst_n)begin
+    ping_pong_rd <= 0;
+    accum_count <= 0;
+    out_chan_count <= 0;
+end
+else begin
+    if( curr_state == IDLE )begin
+        addrB <= 0;
+        ping_pong_rd <= 0;
+        accum_count <= 0;
+        out_chan_count <= 0;
+    end
+    else if( curr_state == PARAM_READ )begin
+        addrB <= 0;
+        accum_count <= 0;
+        out_chan_count <= 0;
+    end
+    else if ( curr_state == BRAM_READ)begin
+        if( enaB_reg & accum_count == accum_total -1 )begin
+            accum_count <= 0;
+            if(!act_first_oc_next)begin
+                if( act_tile_count != ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count == ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    act_tile_count <= act_tile_count + 1;
+                    out_chan_count <=  0;
+                    //addrB <= addrB +1 ;
+                end
+                else if( act_tile_count != ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count != ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    out_chan_count <= out_chan_count + 1;
+                    //addrB <= addrB +1 ;
+                end
+                else if( act_tile_count == ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count == ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    act_tile_count <= 0;
+                    out_chan_count <=  0;
+                    ping_pong_rd <= !ping_pong_rd;
+                    //addrB <= addrB +1 ;
+                end 
+            end
+            else begin
+                if( act_tile_count == ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count != ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    act_tile_count <= 0;
+                    out_chan_count <=  out_chan_count + 1;
+                    //addrB <= addrB +1 ;
+                end
+                else if( act_tile_count != ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count != ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    act_tile_count <= act_tile_count + 1;
+                    //addrB <= addrB +1 ;
+                end
+                else if( act_tile_count == ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count == ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    act_tile_count <= 0;
+                    out_chan_count <=  0;
+                    ping_pong_rd <= !ping_pong_rd;
+                    //addrB <= addrB +1 ;
+                end 
+            end
+        end
+        else begin
+            accum_count <= accum_count + 1;
+        end
+    end
+end
+end
+
+//addrB
+always_ff @(posedge clk or negedge rst_n)begin
+if(!rst_n)begin
+    addrB <= 0;
+    in_channel_tile_count <= 0;
+end
+else begin
+    if( curr_state != BRAM_READ )
+        addrB  <= addrB + 1;
+    else 
+        if( mem_layout_act_first ) begin
+            if( rd_done )
+                addrB<=0;
+            else if( act_tile_count != ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count != ((out_chan_size +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                if(accum_count == accum_total - 1 )begin
+                    if( act_first_oc_next )
+                        addrB <=  addrB + 1;
+                    else 
+                        addrB <=  0;
+                end
+                else 
+                    addrB <=  addrB + 1;
+            end
+            else if( act_tile_count == ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count != ((out_chan_size +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                if(accum_count == accum_total - 1 )begin
+                        addrB <=  0;
+                end
+                else 
+                    addrB <=  addrB + 1;
+            end
+            else if( act_tile_count != ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count == ((out_chan_size +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    addrB <=  addrB + 1;
+            end
+            else begin
+                if( accum_count == accum_total - 1)
+                    addrB <=  0;
+                else 
+                    addrB <=  addrB + 1;
+            end
+        end 
+        else begin
+            if( rd_done )
+                addrB<=0;
+            else if( act_tile_count != ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count != ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                if( accum_count == accum_total -1)begin
+                    if(act_first_oc_next)
+                        addrB <=  addrB +1 ;
+                    else
+                        addrB <=  addrB - accum_total + 1 ; 
+                end
+                else if(accum_count[$clog2(NUM_COLS)-1:0] == NUM_COLS-1   )begin
+                        
+                        if( in_channel_tile_count == in_chan_size>>$clog2(NUM_COLS) -1  )begin
+                            addrB <=  addrB - (in_channel_tile_count+1)<<$clog2(NUM_COLS) + 1;
+                        end
+                        else begin
+                            addrB <=  addrB + (kernel_size+1)<<$clog2(NUM_COLS);
+                            in_channel_tile_count <= in_channel_tile_count + 1;
+                        end
+                    
+                end
+                else 
+                    addrB <=  addrB + 1;
+            end
+            else if( act_tile_count == ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count != ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                if( accum_count == accum_total -1)begin
+                        addrB <=  0 ;        
+                        in_channel_tile_count <= 0;            
+                end
+                else if(accum_count[$clog2(NUM_COLS)-1:0] == NUM_COLS-1   )begin
+                        
+                        if( in_channel_tile_count == in_chan_size>>$clog2(NUM_COLS) -1  )begin
+                            addrB <=  addrB - (in_channel_tile_count+1)<<$clog2(NUM_COLS) + 1;
+                        end
+                        else begin
+                            addrB <=  addrB + (kernel_size+1)<<$clog2(NUM_COLS);
+                            in_channel_tile_count <= in_channel_tile_count + 1;
+                        end
+                    
+                end
+                else 
+                    addrB <=  addrB + 1;
+            end
+            else if( act_tile_count != ((in_seq_length +NUM_BANKS-1) >> $clog2(NUM_BANKS) -1) & out_chan_count == ((out_chan_count +NUM_COLS-1) >> $clog2(NUM_COLS) -1))begin
+                    if(accum_count[$clog2(NUM_COLS)-1:0] == NUM_COLS-1   )begin
+                        
+                        if( in_channel_tile_count == in_chan_size>>$clog2(NUM_COLS) -1  )begin
+                            addrB <=  addrB - (in_channel_tile_count+1)<<$clog2(NUM_COLS) + 1;
+                        end
+                        else begin
+                            addrB <=  addrB + (kernel_size+1)<<$clog2(NUM_COLS);
+                            in_channel_tile_count <= in_channel_tile_count + 1;
+                        end
+                    
+                     end
+                     else 
+                        addrB <=  addrB + 1;
+            end
+            else begin
+                if( accum_count == accum_total - 1)
+                    addrB <=  0;
+                else if(accum_count[$clog2(NUM_COLS)-1:0] == NUM_COLS-1   )begin
+                        
+                        if( in_channel_tile_count == in_chan_size>>$clog2(NUM_COLS) -1  )begin
+                            addrB <=  addrB - (in_channel_tile_count+1)<<$clog2(NUM_COLS) + 1;
+                        end
+                        else begin
+                            addrB <=  addrB + (kernel_size+1)<<$clog2(NUM_COLS);
+                            in_channel_tile_count <= in_channel_tile_count + 1;
+                        end
+                    
+                     end
+                else 
+                    addrB <=  addrB + 1;
+            end
 
 
+        end
+
+end
+
+end
 
 endmodule
