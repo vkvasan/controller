@@ -16,6 +16,7 @@ module IBRAM_selector#(
     input logic weA_1, 
     input logic [NUM_BANKS-1:0]bank_idx_1,
     input logic wr_done1,
+    output logic full1, 
 
      //from iwrite controller 2
     input logic [NUM_BANKS-1:0][ACT_WIDTH-1:0]diA_2, //act_data
@@ -23,11 +24,15 @@ module IBRAM_selector#(
     input logic [NUM_BANKS-1:0]weA_2, 
     input logic [NUM_BANKS-1:0]bank_idx_2,
     input logic wr_done2,
+    output logic [NUM_BANKS-1:0]full2, 
 
     //to ibram_controller_rd ( write address info.)
-    output logic [NUM_BANKS-1:0][$clog2(WRITE_DEPTH):0]write_addr_pingpong_data, 
+    //output logic [NUM_BANKS-1:0][$clog2(WRITE_DEPTH):0]write_addr_pingpong_data, 
     //output logic [NUM_BANKS-1:0]write_addr_pingpong_valid, 
     //input logic [NUM_BANKS-1:0]write_addr_pingpong_ready, 
+
+    //to iwrite controller 1and 2
+    output [NUM_BANKS-1:0][$clog2(READ_DEPTH):0]read_addrB_ping_pong;
 
     //to ibram_controller_rd ( data stream )
     output logic [NUM_BANKS-1:0][READ_WIDTH-1:0]doB, 
@@ -75,9 +80,29 @@ generate
     end
 endgenerate
 
-always_ff begin
-    write_addr_pingpong_data = {wr_addr_counter, ping_pong};
+always_ff@(posedge clk) begin
+    write_addr_pingpong_data = {ping_pong, wr_addr_counter};
 end
+
+always_comb begin
+    for ( i =0; i < NUM_BANKS; i++)begin
+        if( curr_state == INIT_WRITE )begin
+            full1[i] = (ping_pong[i] == addrB_ping_pong[i][READ_DEPTH]) & ( write_addr_pingpong_data[i][$clog2(WRITE_WIDTH)-1:0] << $clog2(WRITE_WIDTH/READ_WIDTH)) -  addrB_ping_pong[i][$clog2(READ_DEPTH)-1:0] == READ_DEPTH ? 1:0;
+            full2[i] = 0;
+        end    
+        else if ( curr_state == WRITE )begin
+            full2[i] = (ping_pong[i] == addrB_ping_pong[i][READ_DEPTH]) & ( write_addr_pingpong_data[i][$clog2(WRITE_WIDTH)-1:0] << $clog2(WRITE_WIDTH/READ_WIDTH)) -  addrB_ping_pong[i][$clog2(READ_DEPTH)-1:0] == READ_DEPTH ? 1:0;
+            full1[i] = 0;
+        end
+        else begin
+            full1[i] = 0;
+            full2[i] = 0;
+        end
+    end
+end
+
+always_ff@(posedge clk)
+    read_addrB_ping_pong <= addrB_ping_pong;
 
 //update write address counter, 
 always_ff @(posedge clk or negedgr rst_n)begin
