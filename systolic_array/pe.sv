@@ -1,5 +1,6 @@
 module pe#(
-    PE_ID = 4
+    PE_ROW_ID = 4,
+    PE_COL_ID = 4
 )(
     input logic clk, 
     input logic rst_n, 
@@ -63,6 +64,7 @@ logic full_instr;
 logic empty_instr;
 logic [1:0]wr_pointer;
 logic [1:0]rd_pointer;
+
 /*
 
     //instruction stream ( west )
@@ -91,7 +93,7 @@ if(!rst_n)begin
 end
 else begin
 
-    if( full_instr ) begin
+    if( (wr_pointer - rd_pointer == 1) & instr_w_ready & instr_w_valid[i] ) begin
         instr_w_ready <= 0;
     end
     else 
@@ -174,32 +176,140 @@ endcase
 end
 end
 
-//
+/*
+//local registers
+logic [1:0]op_code;
+logic [9:0]iter;
+logic broadcast_bus;
+logic [31:0]offset; 
+logic [31:0]accum; 
+logic [7:0]act_reg;
+logic [7:0]weight_reg;
+*/
+
 always_ff@(posedge clk or negedge rst_n)begin
 if( !rst_n )begin
-    rd_pointer <=  0;
+     op_code <=  0;
+    iter <= 0;
+    broadcast_bus <= 0;
+    offset <= 0;
+    accum <= 0;
+    act_reg <= 0;
+    weight_reg <= 0;
 end
 else begin
 case(curr_state)
 IDLE : begin
         if( next_state == DECODE)begin
-            rd_pointer <= 0;
+            op_code <=  0;
+            iter <= 0;
+            broadcast_bus <= 0;
+            offset <= 0;
+            accum <= 0;
+            act_reg <= 0;
+            weight_reg <= 0;
         end
     end
 DECODE: begin
         if( !empty_instr)begin
-            op_code <= instr[rd_pointer[0]]
+            if( instr[rd_pointer[0]][1:0] == COMPARE_STORE )begin
+                op_code <= COMPARE_STORE;
+            end
+            if ( instr[rd_pointer[0]][1:0] == MAC_REDUCE_SOUTH_BROADCAST )begin
+                op_code <= MAC_REDUCE_SOUTH_BROADCAST;
+                iter <= instr[rd_pointer[0]][INSTR_BIT-1:2];
+                broadcast_bus <=  instr[rd_pointer[0]][1];
+            end
+            if( instr[rd_pointer[0]][1:0] ==  REDUCE_OFFSET_SEND )begin
+                op_code <= REDUCE_OFFSET_SEND;
+                offset <= fn_expand1(instr[rd_pointer[0]][INSTR_BIT-1:2] );
+            end
         end
         end
 EXECUTE: begin
-            if( next_state == DECODE)begin
-                rd_pointer <= rd_pointer + 1;
+            if( op_code == COMPARE_STORE )begin
+                if( next_state == DECODE)begin
+                    op_code <=  0;
+                    iter <= 0;
+                    broadcast_bus <= 0;
+                    offset <= 0;
+                    accum <= 0;
+                    act_reg <= 0;
+                    weight_reg <= 0;
+                end
+            end
+            if( op_code == MAC_REDUCE_SOUTH_BROADCAST )begin
+                if( next_state == DECODE || next_state == IDLE)begin
+                    op_code <=  0;
+                    iter <= 0;
+                    broadcast_bus <= 0;
+                    offset <= 0;
+                    accum <= 0;
+                    act_reg <= 0;
+                    weight_reg <= 0;
+                end
+                else begin
+                    if( actin_w_valid[PE_ROW_ID] & actin_w_ready[PE_ROW_ID] )begin
+                        act_reg <= actin_w;
+                    end
+                    if(win_w_valid[PE_ROW_ID] & win_w_ready[PE_ROW_ID] )begin
+                        weight_reg <= win_w;
+                    end
+
+                    if( iter_count < iter-1 )begin
+                        if( actout_e_valid[PE_ROW_ID] & wout_s_valid[PE_ROW_ID])begin
+                            iter_count <= iter_count + 1;
+                            accum <= accum + act_reg * weight_reg; //DSP 
+                        end
+                    end
+                    else if( iter_count == iter-1 ) begin
+                        if( actout_e_valid[PE_ROW_ID] & wout_s_valid[PE_ROW_ID])begin
+                            if( broadcast_bus )begin
+                                iter_count <= 0;
+                                accum <= 0;
+                            end
+                            else begin
+                                iter_count <=  iter_count + 1;
+                                accum <= accum + act_reg * weight_reg; //DSP 
+                            end
+                        end
+                    end
+                    else begin
+                        iter_count <=0;
+                        accum <= 0;
+                    end
+            end
             end
         end
-
 endcase
 end
 end
 
+/*
+    //to accum bus 
+    output logic [ACCUM_BIT-1:0]accum_out_s, 
+    output logic accum_out_s_valid,
+    input logic accum_out_s_ready,
+*/
+
+always_ff@(posedge clk or negedge rst_n)begin
+if(!rst_n)begin
+    accum_out_s_valid <= 0;
+    accum_out_s <= 0;
+end
+else begin
+    if( op_code == MAC_REDUCE_SOUTH_BROADCAST & broadcast_bus == 1 & iter_count ==iter-1 )begin
+        if( actout_e_valid[PE_ROW_ID] & wout_s_valid[PE_ROW_ID])begin
+            accum_out_s <=  accum + weight_reg * input_reg;
+            accum_out_s_valid <= 1;
+        end
+    end
+    else 
+        accum_out_s_valid <= 0;
+
+
+end
+
+end
 
 endmodule 
