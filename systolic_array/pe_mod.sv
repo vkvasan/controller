@@ -13,27 +13,37 @@ module pe_mod#(
     //activation interface ( west )
     input logic [ACT_BIT-1:0]actin_w2, 
     input logic [NUM_COLS-1:0]actin_w2_valid,
-    output logic [NUM_COLS-1:0]actin_w2_ready,
+    output logic actin_w2_ready,
     
     //activation interface ( east )
     output logic [ACT_BIT-1:0]actout_e1, 
     output logic [NUM_COLS-1:0]actout_e1_valid,
-    input logic [NUM_COLS-1:0]actout_e1_ready,
+    input logic actout_e1_ready,
 
     //activation interface ( east )
     output logic [ACT_BIT-1:0]actout_e2, 
     output logic [NUM_COLS-1:0]actout_e2_valid,
-    input logic [NUM_COLS-1:0]actout_e2_ready,
+    input logic actout_e2_ready,
 
     //weight interface ( north )
-    input logic [ACCUM_BIT-1:0]win_n, 
+    input logic [WEIGHT_BIT-1:0]win_n, 
     input logic [NUM_ROWS-1:0]win_n_valid,
-    output logic [NUM_ROWS-1:0]win_n_ready,
+    output logic win_n_ready,
 
     //weight interface ( south )
-    output logic [ACCUM_BIT-1:0]wout_s, 
+    output logic [WEIGHT_BIT-1:0]wout_s, 
     output logic [NUM_ROWS-1:0]wout_s_valid,
-    input logic [NUM_ROWS-1:0]wout_s_ready,
+    input logic wout_s_ready,
+
+    //accum stream ( north)
+    output logic [ACCUM_BIT-1:0]accum_stream_s, 
+    output logic [NUM_ROWS-1:0]accum_stream_s_valid,
+    input logic accum_stream_s_ready,
+
+     //accum stream ( south )
+    input logic [ACCUM_BIT-1:0]accum_stream_n, 
+    input logic [NUM_ROWS-1:0]accum_stream_n_valid,
+    output logic accum_stream_n_ready,
 
     //to accum bus 
     output logic [ACCUM_BIT-1:0]accum_out_s, 
@@ -119,11 +129,20 @@ logic [1:0][ACT_BIT-1:0]act_buffer1;
 logic [1:0][ACT_BIT-1:0]act_buffer2;
 logic [1:0][WEIGHT_BIT-1:0]weight_buffer;
 logic [1:0][1:0]control_buffer;
+
 logic [1:0]wr_pointer_instr;
 logic [1:0]wr_pointer_act1;
 logic [1:0]wr_pointer_act2;
 logic [1:0]wr_pointer_weight;
 logic [1:0]wr_pointer_change;
+
+logic ping_pong;//rd
+
+logic [1:0]rd_pointer_instr;
+logic [1:0]rd_pointer_act1;
+logic [1:0]rd_pointer_act2;
+logic [1:0]rd_pointer_weight;
+logic [1:0]rd_pointer_change;
 
 always_ff@(posedge clk or negedge rst_n)begin
 if(!rst_n)begin
@@ -158,7 +177,64 @@ else begin
 end
 end
 
+typedef enum logic[1:0]{IDLE, DECODE, EXECUTE}STATE;
+STATE curr_state,next_state;
+//next_state
+always_comb begin
+case(curr_state)
+IDLE: if( !instruction_buffer_empty)
+        next_state = DECODE;
+    else 
+        next_state = IDLE;
 
+DECODE: next_state = EXECUTE;
+EXECUTE:begin
+        if( !empty_control_buffer)begin
+            if( op_code == MAC_REDUCE_SOUTH_BROADCAST & iter_count == iter-1 & control_buffer[rd_pointer_change[0]][0])
+                next_state = DECODE;
+            else if ( op_code == COMPARE_STORE & !empty_act_buffer2)
+                next_state = DECODE;
+            else if ( op_code == REDUCE_OFFSET_SEND & control_buffer[rd_pointer_change[0]][0])
+                next_state = DECODE;
+            else
+                next_state = EXECUTE;
+        end
+        else 
+            next_state = EXECUTE;
+end
+endcase
+end
 
+//updating local register-> rd_pointers(rd_pointer_change,rd_pointer_weight,rd_pointer_act2,rd_pointer_act1,rd_pointer_instr   )
+always_ff@(posedge clk or negedge rst_n)begin
+if(!rst_n)begin
+    rd_pointer_change <= 0;
+    ping_pong <= 0;
+    rd_pointer_instr <= 0;
+    rd_pointer_act2 <= 0;;
+
+end
+else begin
+if ( curr_state == EXECUTE & next_state == DECODE)begin
+    rd_pointer_change <= rd_pointer_change + 1;    
+    rd_pointer_instr <= rd_pointer_instr + 1;
+    if( rd_pointer_change[0][1])
+        ping_pong <= !ping_pong;
+end
+
+if(!ping_pong)begin
+    if( !empty_act_buffer1)
+        rd_pointer_act1 <= rd_pointer_act1 + 1;
+end
+else begin
+    if( !empty_act_buffer2)
+        rd_pointer_act2 <= rd_pointer_act2 + 1;
+end
+
+if( !empty_weight_buffer)
+        rd_pointer_weight <= rd_pointer_weight + 1;
+
+end
+end
 
 endmodule
